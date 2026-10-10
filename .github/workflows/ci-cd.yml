@@ -1,0 +1,159 @@
+name: CI/CD - Cidades ESG Inteligentes
+
+# develop -> build, testes, imagem e deploy em STAGING
+# main    -> o mesmo + deploy em PRODUCAO (somente se staging passar)
+# PR      -> apenas build e testes
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Evita dois deploys simultaneos no mesmo ambiente
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: 1. Build e testes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 21 (Temurin) com cache do Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Compilar e rodar os testes (mvn verify)
+        run: mvn -B verify
+
+      - name: Resumo dos testes
+        if: always()
+        run: |
+          total=0; falhas=0; erros=0; ignorados=0
+          for f in target/surefire-reports/TEST-*.xml; do
+            [ -f "$f" ] || continue
+            linha=$(grep -m1 '<testsuite' "$f")
+            attr() { echo "$linha" | grep -o " $1=\"[0-9]*\"" | grep -o '[0-9]*'; }
+            total=$((total + $(attr tests)))
+            falhas=$((falhas + $(attr failures)))
+            erros=$((erros + $(attr errors)))
+            ignorados=$((ignorados + $(attr skipped)))
+          done
+          {
+            echo "### Testes automatizados"
+            echo ""
+            echo "| Total | Sucesso | Falhas | Erros | Ignorados |"
+            echo "|---|---|---|---|---|"
+            echo "| $total | $((total - falhas - erros - ignorados)) | $falhas | $erros | $ignorados |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatorios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-testes
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+      - name: Publicar o .jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: cidades-esg-jar
+          path: target/cidades-esg.jar
+
+  docker:
+    name: 2. Imagem Docker
+    needs: build-test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.nome.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # O GHCR exige o nome da imagem em minusculas
+      - name: Nome da imagem
+        id: nome
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: APP_VERSION=${{ github.sha }}
+          tags: |
+            ${{ steps.nome.outputs.image }}:sha-${{ github.sha }}
+            ${{ steps.nome.outputs.image }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: 3. Deploy STAGING
+    needs: docker
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.APP_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Disparar deploy no Render com a imagem do commit
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMAGE: ${{ needs.docker.outputs.image }}:sha-${{ github.sha }}
+        run: bash scripts/render-deploy.sh "$IMAGE"
+
+      - name: Smoke test
+        env:
+          SMOKE_TIMEOUT: '900'
+        run: bash scripts/smoke-test.sh "${{ vars.APP_URL }}" "${{ github.sha }}"
+
+  deploy-production:
+    name: 4. Deploy PRODUCAO
+    needs: [docker, deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Mesma imagem validada em staging (sha-<commit>), sem novo build
+      - name: Promover a imagem para producao no Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMAGE: ${{ needs.docker.outputs.image }}:sha-${{ github.sha }}
+        run: bash scripts/render-deploy.sh "$IMAGE"
+
+      - name: Smoke test
+        env:
+          SMOKE_TIMEOUT: '900'
+        run: bash scripts/smoke-test.sh "${{ vars.APP_URL }}" "${{ github.sha }}"

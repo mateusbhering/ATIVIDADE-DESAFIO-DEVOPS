@@ -12,7 +12,13 @@ API REST em **Java Spring Boot** para o morador relatar problemas urbanos (burac
 
 O ciclo de vida da aplicação é automatizado com práticas DevOps: containerização com Docker, orquestração com Docker Compose e pipeline CI/CD no **GitHub Actions** com deploy em **staging** e **produção** no **Render**.
 
-**Integrantes:** `[Nome 1 - RM00000]`, `[Nome 2 - RM00000]`, `[Nome 3 - RM00000]`
+**Integrantes:**
+
+- Mateus Bhering Beltrão Santos - RM564760
+- Ariel Alves Amaral - RM564563
+- Wesley Santos de França - RM563666
+- Ronaldo dos Santos Silva - RM561414
+- Rodrigo Kumamoto Rêgo - RM566049
 
 | Ambiente | URL |
 |---|---|
@@ -133,7 +139,7 @@ pull request ─┘        (mvn verify)       (push GHCR)          + smoke test 
 |---|---|---|
 | **1. Build e testes** | PR, `develop`, `main` | `mvn verify`: compila e roda os 24 testes (13 unitários das regras de negócio, sem banco, e 11 de integração da API com MockMvc + H2), publica os relatórios e o `.jar` como artefatos e escreve o resumo dos testes na página da execução. Se um teste falhar, o pipeline para aqui. |
 | **2. Imagem Docker** | `develop`, `main` | Constrói a imagem pelo `Dockerfile` e publica no GHCR com duas tags: `sha-<commit>` (imutável) e o nome da branch. O commit é gravado na imagem (`APP_VERSION`). |
-| **3. Deploy staging** | `develop`, `main` | Chama o *deploy hook* do serviço de staging no Render passando a imagem exata (`imgURL=...:sha-<commit>`) e roda o `scripts/smoke-test.sh`, que espera o `/actuator/health` ficar `UP` e confere se `/api/info` já mostra a versão nova. |
+| **3. Deploy staging** | `develop`, `main` | `scripts/render-deploy.sh` chama o *deploy hook* do serviço de staging no Render passando a imagem exata (`imgURL=...:sha-<commit>`) e roda o `scripts/smoke-test.sh`, que espera o `/actuator/health` ficar `UP` e confere se `/api/info` já mostra a versão nova. |
 | **4. Deploy produção** | somente `main`, após staging passar | Promove **a mesma imagem** testada em staging para produção e repete o smoke test. O environment `production` pode exigir aprovação manual. |
 
 **Por que é seguro:** a imagem é construída uma única vez e promovida entre ambientes (o que foi validado em staging é exatamente o que vai para produção); produção só recebe deploy se build, testes, deploy de staging e smoke test de staging passarem.
@@ -262,7 +268,7 @@ Links: [execução do pipeline](https://github.com/SEU-USUARIO/SEU-REPO/actions)
 - **Containers:** Docker (multi-stage), Docker Compose
 - **CI/CD:** GitHub Actions, GitHub Container Registry (GHCR), GitHub Environments
 - **Hospedagem:** Render (Web Services por imagem + PostgreSQL gerenciado)
-- **Scripts:** Bash (`scripts/smoke-test.sh`), Python + ReportLab (geração do PDF em `docs/`)
+- **Scripts:** Bash (`scripts/smoke-test.sh` e `scripts/render-deploy.sh`)
 
 ---
 
@@ -276,11 +282,15 @@ cidades-esg-zeladoria/
 ├── .env.example                   # modelo de variáveis (local)
 ├── env/                           # variáveis para simular staging e produção
 ├── scripts/smoke-test.sh          # verificação pós-deploy
+├── scripts/render-deploy.sh       # dispara o deploy no Render com a imagem do commit
 ├── src/main/java/.../model        # Ocorrencia, tipos, secretarias e fluxo de status
+├── src/main/java/.../dto          # requisições e respostas da API
+├── src/main/java/.../config        # relógio e dados de demonstração (APP_SEED)
 ├── src/main/java/.../service      # casos de uso e cálculo do painel de transparência
 ├── src/main/java/.../controller   # endpoints REST
 ├── src/test/java/...              # 13 testes unitários e 11 de integração
-├── docs/                          # PDF da documentação, gerador e prints
+├── docs/prints/                   # prints do funcionamento
+├── Documentacao-Cidades-ESG.docx  # documentação técnica (exportar para PDF)
 └── README.md
 ```
 

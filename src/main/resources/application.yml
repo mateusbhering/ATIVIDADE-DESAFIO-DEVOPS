@@ -1,0 +1,35 @@
+server:
+  # O Render informa a porta pela variavel PORT
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: cidades-esg
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cidades_esg}
+    username: ${SPRING_DATASOURCE_USERNAME:esg}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        # staging e producao compartilham o mesmo Postgres com schemas separados
+        default_schema: ${DB_SCHEMA:public}
+        hbm2ddl:
+          create_namespaces: true
+
+app:
+  env: ${APP_ENV:local}
+  version: ${APP_VERSION:dev}
+  seed: ${APP_SEED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
