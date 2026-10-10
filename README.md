@@ -22,8 +22,8 @@ O ciclo de vida da aplicação é automatizado com práticas DevOps: containeriz
 
 | Ambiente | URL |
 |---|---|
-| Staging | `https://SEU-SERVICO-staging.onrender.com` |
-| Produção | `https://SEU-SERVICO-prod.onrender.com` |
+| Staging | `https://cidades-esg-staging-cxn4.onrender.com` |
+| Produção | `https://cidades-esg-prod.onrender.com` |
 
 ### Regras de negócio
 
@@ -256,7 +256,7 @@ ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
 ![Docker Compose local](docs/prints/08-docker-compose-local.png)
 ![Transparência em staging](docs/prints/09-staging-transparencia.png)
 
-Links: [execução do pipeline](https://github.com/SEU-USUARIO/SEU-REPO/actions) · [staging](https://SEU-SERVICO-staging.onrender.com/api/info) · [produção](https://SEU-SERVICO-prod.onrender.com/api/info)
+Links: [execução do pipeline](https://github.com/mateusbhering/ATIVIDADE-DESAFIO-DEVOPS/actions) · [staging](https://cidades-esg-staging-cxn4.onrender.com/api/info) · [produção](https://cidades-esg-prod.onrender.com/api/info)
 
 ---
 
