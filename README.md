@@ -232,7 +232,7 @@ ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
 
 ## Prints do funcionamento
 
-> Salve os prints na pasta `docs/prints/` com os nomes abaixo; eles aparecem aqui automaticamente no GitHub.
+Evidências da execução de 10/10/2026 (commit `6e77967`), também reunidas no PDF [`docs/Documentacao-Cidades-ESG.pdf`](docs/Documentacao-Cidades-ESG.pdf).
 
 | # | Evidência | Arquivo |
 |---|---|---|
@@ -290,7 +290,8 @@ cidades-esg-zeladoria/
 ├── src/main/java/.../controller   # endpoints REST
 ├── src/test/java/...              # 13 testes unitários e 11 de integração
 ├── docs/prints/                   # prints do funcionamento
-├── Documentacao-Cidades-ESG.docx  # documentação técnica (exportar para PDF)
+├── docs/Documentacao-Cidades-ESG.pdf  # documentação técnica (entrega)
+├── Documentacao-Cidades-ESG.docx  # fonte editável do PDF
 └── README.md
 ```
 
@@ -304,6 +305,6 @@ cidades-esg-zeladoria/
 | Dockerfile funcional | ☑ |
 | docker-compose.yml ou arquivos Kubernetes | ☑ |
 | Pipeline com etapas de build, teste e deploy | ☑ |
-| README.md com instruções e prints | ☐ (adicionar prints em `docs/prints/`) |
-| Documentação técnica com evidências (PDF ou PPT) | ☐ (gerar novamente o PDF após incluir os prints) |
-| Deploy realizado nos ambientes staging e produção | ☐ (após configurar Render e GitHub) |
+| README.md com instruções e prints | ☑ |
+| Documentação técnica com evidências (PDF ou PPT) | ☑ (`docs/Documentacao-Cidades-ESG.pdf`) |
+| Deploy realizado nos ambientes staging e produção | ☑ |
